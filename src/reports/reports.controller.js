@@ -10,14 +10,68 @@ const AuditLog = require('../audit/audit_log.model');
 
 const getDashboardStats = async (req, res) => {
   try {
-    // 1. Vehicle Stock aggregates
-    const stockStats = await Vehicle.aggregate([
-      {
-        $group: {
-          _id: '$status',
-          count: { $sum: 1 }
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+
+    // Run all 11 queries in parallel
+    const [
+      stockStats,
+      customerOutstanding,
+      supplierOutstanding,
+      customerPaid,
+      supplierPaid,
+      salesToday,
+      salesThisMonth,
+      totalPurchases,
+      totalExpenses,
+      lowStockAlerts,
+      pendingFollowups
+    ] = await Promise.all([
+      Vehicle.aggregate([
+        {
+          $group: {
+            _id: '$status',
+            count: { $sum: 1 }
+          }
         }
-      }
+      ]),
+      Customer.aggregate([
+        { $group: { _id: null, total: { $sum: '$balance' } } }
+      ]),
+      Supplier.aggregate([
+        { $group: { _id: null, total: { $sum: '$balance' } } }
+      ]),
+      Invoice.aggregate([
+        { $match: { status: 'ACTIVE' } },
+        { $group: { _id: null, total: { $sum: { $subtract: [ "$totalAmount", "$outstandingAmount" ] } } } }
+      ]),
+      Purchase.aggregate([
+        { $group: { _id: null, total: { $sum: { $subtract: [ "$totalAmount", "$outstandingAmount" ] } } } }
+      ]),
+      Invoice.aggregate([
+        { $match: { invoiceDate: { $gte: todayStart }, status: 'ACTIVE' } },
+        { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+      ]),
+      Invoice.aggregate([
+        { $match: { invoiceDate: { $gte: monthStart }, status: 'ACTIVE' } },
+        { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+      ]),
+      Purchase.aggregate([
+        { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+      ]),
+      Expense.aggregate([
+        { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+      ]),
+      Product.find({ 
+        type: { $ne: 'Vehicle' }
+      }),
+      Lead.find({
+        'followUps.status': 'Pending'
+      }).limit(5)
     ]);
 
     const statsMap = {
@@ -36,63 +90,6 @@ const getDashboardStats = async (req, res) => {
     });
 
     const totalVehicles = statsMap.AVAILABLE + statsMap.RESERVED + statsMap.RECEIVED + statsMap.SERVICE;
-
-    // 2. Financial outstanding
-    const customerOutstanding = await Customer.aggregate([
-      { $group: { _id: null, total: { $sum: '$balance' } } }
-    ]);
-    const supplierOutstanding = await Supplier.aggregate([
-      { $group: { _id: null, total: { $sum: '$balance' } } }
-    ]);
-
-    const customerPaid = await Invoice.aggregate([
-      { $match: { status: 'ACTIVE' } },
-      { $group: { _id: null, total: { $sum: { $subtract: [ "$totalAmount", "$outstandingAmount" ] } } } }
-    ]);
-
-    const supplierPaid = await Purchase.aggregate([
-      { $group: { _id: null, total: { $sum: { $subtract: [ "$totalAmount", "$outstandingAmount" ] } } } }
-    ]);
-
-    // 3. Sales statistics
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-
-    const monthStart = new Date();
-    monthStart.setDate(1);
-    monthStart.setHours(0, 0, 0, 0);
-
-    const salesToday = await Invoice.aggregate([
-      { $match: { invoiceDate: { $gte: todayStart }, status: 'ACTIVE' } },
-      { $group: { _id: null, total: { $sum: '$totalAmount' } } }
-    ]);
-
-    const salesThisMonth = await Invoice.aggregate([
-      { $match: { invoiceDate: { $gte: monthStart }, status: 'ACTIVE' } },
-      { $group: { _id: null, total: { $sum: '$totalAmount' } } }
-    ]);
-
-    const totalPurchases = await Purchase.aggregate([
-      { $group: { _id: null, total: { $sum: '$totalAmount' } } }
-    ]);
-
-    const totalExpenses = await Expense.aggregate([
-      { $group: { _id: null, total: { $sum: '$totalAmount' } } }
-    ]);
-
-    // 4. Low stock alerts for spare parts and accessories
-    // In a fully custom setup, we can compute stock using purchase items minus invoice consumed parts.
-    // For our simplified MVP, we will count available products by their current physical stock or show items.
-    // Let's return low-stock alerts based on products whose minStock is set and show current count.
-    // For simplicity, we can fetch all products of type 'Spare Part' or 'Accessory' and return those with alert tags
-    const lowStockAlerts = await Product.find({ 
-      type: { $ne: 'Vehicle' }
-    }); // Just return spare parts listing to display in list
-
-    // 5. CRM reminders
-    const pendingFollowups = await Lead.find({
-      'followUps.status': 'Pending'
-    }).limit(5);
 
     res.json({
       stock: {
