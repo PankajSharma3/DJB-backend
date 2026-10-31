@@ -9,7 +9,11 @@ const getVehicles = async (req, res) => {
     if (status) filter.status = status;
     if (product) filter.product = product;
     
-    const vehicles = await Vehicle.find(filter).populate('product').populate('customer', 'name phone').sort({ createdAt: -1 });
+    const vehicles = await Vehicle.find(filter)
+      .populate('product')
+      .populate('customer', 'name phone')
+      .sort({ createdAt: -1 })
+      .lean();
     res.json(vehicles);
   } catch (error) {
     console.error('getVehicles error:', error);
@@ -19,7 +23,10 @@ const getVehicles = async (req, res) => {
 
 const getVehicleById = async (req, res) => {
   try {
-    const vehicle = await Vehicle.findById(req.params.id).populate('product').populate('customer');
+    const vehicle = await Vehicle.findById(req.params.id)
+      .populate('product')
+      .populate('customer')
+      .lean();
     if (!vehicle) {
       return res.status(404).json({ message: 'Vehicle not found' });
     }

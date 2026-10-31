@@ -56,4 +56,10 @@ const productSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Indexes for fast search and filtering
+productSchema.index({ name: 1 });
+productSchema.index({ type: 1 });
+productSchema.index({ category: 1 });
+productSchema.index({ color: 1 });
+
 module.exports = mongoose.model('Product', productSchema);

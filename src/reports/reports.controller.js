@@ -68,10 +68,10 @@ const getDashboardStats = async (req, res) => {
       ]),
       Product.find({ 
         type: { $ne: 'Vehicle' }
-      }),
+      }).lean(),
       Lead.find({
         'followUps.status': 'Pending'
-      }).limit(5)
+      }).limit(5).lean()
     ]);
 
     const statsMap = {
@@ -136,7 +136,8 @@ const getGstSalesRegister = async (req, res) => {
     const invoices = await Invoice.find(filter)
       .populate('customer')
       .populate('items.product')
-      .sort({ invoiceNo: 1 });
+      .sort({ invoiceNo: 1 })
+      .lean();
 
     res.json(invoices);
   } catch (error) {
@@ -163,7 +164,8 @@ const getGstPurchaseRegister = async (req, res) => {
     const purchases = await Purchase.find(filter)
       .populate('supplier')
       .populate('items.product')
-      .sort({ date: 1 });
+      .sort({ date: 1 })
+      .lean();
 
     res.json(purchases);
   } catch (error) {
@@ -174,7 +176,7 @@ const getGstPurchaseRegister = async (req, res) => {
 
 const getAuditLogs = async (req, res) => {
   try {
-    const logs = await AuditLog.find().sort({ createdAt: -1 }).limit(100);
+    const logs = await AuditLog.find().sort({ createdAt: -1 }).limit(100).lean();
     res.json(logs);
   } catch (error) {
     console.error('getAuditLogs error:', error);

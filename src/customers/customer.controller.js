@@ -5,7 +5,7 @@ const { logAudit } = require('../utils/audit');
 
 const getCustomers = async (req, res) => {
   try {
-    const customers = await Customer.find().sort({ name: 1 });
+    const customers = await Customer.find().sort({ name: 1 }).lean();
     res.json(customers);
   } catch (error) {
     console.error('getCustomers error:', error);

@@ -7,7 +7,7 @@ const getProducts = async (req, res) => {
     const filter = {};
     if (type) filter.type = type;
     
-    const products = await Product.find(filter).sort({ name: 1 });
+    const products = await Product.find(filter).sort({ name: 1 }).lean();
     res.json(products);
   } catch (error) {
     console.error('getProducts error:', error);
@@ -17,7 +17,7 @@ const getProducts = async (req, res) => {
 
 const getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await Product.findById(req.params.id).lean();
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }

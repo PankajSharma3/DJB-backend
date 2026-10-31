@@ -83,4 +83,11 @@ const vehicleSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Indexes for fast querying, filtering, and sorting
+vehicleSchema.index({ status: 1 });
+vehicleSchema.index({ product: 1, status: 1 });
+vehicleSchema.index({ createdAt: -1 });
+vehicleSchema.index({ color: 1 });
+vehicleSchema.index({ purchaseInvoice: 1 });
+
 module.exports = mongoose.model('Vehicle', vehicleSchema);
