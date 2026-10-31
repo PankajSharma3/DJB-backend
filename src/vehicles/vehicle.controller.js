@@ -32,7 +32,7 @@ const getVehicleById = async (req, res) => {
 
 const receiveVehicle = async (req, res) => {
   try {
-    const { chassisNo, motorNo, batteryNo, product, color, status, costPrice, sellingPrice, location } = req.body;
+    const { chassisNo, motorNo, batteryNo, product, color, status, costPrice, sellingPrice, location, controllerNo, chargerNo, controllerNumber, chargerNumber } = req.body;
     
     if (!chassisNo || !motorNo || !batteryNo || !product || !color) {
       return res.status(400).json({ message: 'Please provide all required identifiers and product model' });
@@ -53,12 +53,17 @@ const receiveVehicle = async (req, res) => {
       return res.status(400).json({ message: 'Invalid product or product is not a vehicle model' });
     }
 
+    const finalControllerNo = (controllerNo || controllerNumber || selectedProduct.controllerNo || '').toString().trim().toUpperCase();
+    const finalChargerNo = (chargerNo || chargerNumber || selectedProduct.chargerNo || '').toString().trim().toUpperCase();
+
     const vehicle = new Vehicle({
-      chassisNo,
-      motorNo,
-      batteryNo,
+      chassisNo: chassisNo.toString().trim().toUpperCase(),
+      motorNo: motorNo.toString().trim().toUpperCase(),
+      batteryNo: batteryNo.toString().trim().toUpperCase(),
       product,
-      color,
+      color: color.toString().trim(),
+      controllerNo: finalControllerNo,
+      chargerNo: finalChargerNo,
       status: status || 'AVAILABLE',
       costPrice: costPrice || selectedProduct.purchasePrice,
       sellingPrice: sellingPrice || selectedProduct.sellingPrice,

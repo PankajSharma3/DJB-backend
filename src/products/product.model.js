@@ -36,6 +36,21 @@ const productSchema = new mongoose.Schema({
   minStock: {
     type: Number,
     default: 2
+  },
+  color: {
+    type: String,
+    required: [true, 'Color is required'],
+    trim: true
+  },
+  controllerNo: {
+    type: String,
+    required: [true, 'Controller number is required'],
+    trim: true
+  },
+  chargerNo: {
+    type: String,
+    required: [true, 'Charger number is required'],
+    trim: true
   }
 }, {
   timestamps: true

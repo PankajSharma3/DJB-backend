@@ -32,6 +32,18 @@ const vehicleSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  controllerNo: {
+    type: String,
+    trim: true,
+    uppercase: true,
+    default: ''
+  },
+  chargerNo: {
+    type: String,
+    trim: true,
+    uppercase: true,
+    default: ''
+  },
   status: {
     type: String,
     enum: ['IN TRANSIT', 'RECEIVED', 'AVAILABLE', 'RESERVED', 'SOLD', 'DELIVERED', 'RETURNED', 'DAMAGED', 'SERVICE'],

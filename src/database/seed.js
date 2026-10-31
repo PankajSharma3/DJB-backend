@@ -96,21 +96,21 @@ const seedDB = async () => {
     console.log('Seeding Products (Vehicles and Spare Parts)...');
     
     const vehiclesData = [
-      { name: 'EZ Highspeed', type: 'Vehicle', category: 'Two Wheeler', hsnCode: '8711', gstRate: 5, purchasePrice: 70000, sellingPrice: 85000, minStock: 2 },
-      { name: 'DLX', type: 'Vehicle', category: 'Two Wheeler', hsnCode: '8711', gstRate: 5, purchasePrice: 85000, sellingPrice: 105000, minStock: 2 },
-      { name: 'Limosa', type: 'Vehicle', category: 'Two Wheeler', hsnCode: '8711', gstRate: 5, purchasePrice: 120000, sellingPrice: 145000, minStock: 1 },
-      { name: 'Mushak', type: 'Vehicle', category: 'Three Wheeler Cargo', hsnCode: '8711', gstRate: 5, purchasePrice: 180000, sellingPrice: 220000, minStock: 1 }
+      { name: 'EZ Highspeed', type: 'Vehicle', category: 'Two Wheeler', hsnCode: '8711', gstRate: 5, purchasePrice: 70000, sellingPrice: 85000, minStock: 2, color: 'Metallic Grey', controllerNo: 'CTRL-EZ-9941', chargerNo: 'CHG-EZ-8812' },
+      { name: 'DLX', type: 'Vehicle', category: 'Two Wheeler', hsnCode: '8711', gstRate: 5, purchasePrice: 85000, sellingPrice: 105000, minStock: 2, color: 'Glossy Black', controllerNo: 'CTRL-DLX-7731', chargerNo: 'CHG-DLX-6621' },
+      { name: 'Limosa', type: 'Vehicle', category: 'Two Wheeler', hsnCode: '8711', gstRate: 5, purchasePrice: 120000, sellingPrice: 145000, minStock: 1, color: 'Pearl White', controllerNo: 'CTRL-LIM-5519', chargerNo: 'CHG-LIM-4410' },
+      { name: 'Mushak', type: 'Vehicle', category: 'Three Wheeler Cargo', hsnCode: '8711', gstRate: 5, purchasePrice: 180000, sellingPrice: 220000, minStock: 1, color: 'Royal Blue', controllerNo: 'CTRL-MSK-3382', chargerNo: 'CHG-MSK-2271' }
     ];
     
     const partsData = [
-      { name: 'Lithium Battery 60V 30Ah', type: 'Spare Part', category: 'Battery', hsnCode: '8507', gstRate: 18, purchasePrice: 25000, sellingPrice: 32000, minStock: 5 },
-      { name: 'EV Motor Controller', type: 'Spare Part', category: 'Electronics', hsnCode: '8537', gstRate: 18, purchasePrice: 4000, sellingPrice: 6500, minStock: 3 },
-      { name: 'Disc Brake Pad', type: 'Spare Part', category: 'Brakes', hsnCode: '8714', gstRate: 28, purchasePrice: 200, sellingPrice: 450, minStock: 10 }
+      { name: 'Lithium Battery 60V 30Ah', type: 'Spare Part', category: 'Battery', hsnCode: '8507', gstRate: 18, purchasePrice: 25000, sellingPrice: 32000, minStock: 5, color: 'Matte Black', controllerNo: 'CTRL-BAT-N/A', chargerNo: 'CHG-BAT-N/A' },
+      { name: 'EV Motor Controller', type: 'Spare Part', category: 'Electronics', hsnCode: '8537', gstRate: 18, purchasePrice: 4000, sellingPrice: 6500, minStock: 3, color: 'Silver Aluminum', controllerNo: 'CTRL-OEM-MOD48', chargerNo: 'CHG-N/A' },
+      { name: 'Disc Brake Pad', type: 'Spare Part', category: 'Brakes', hsnCode: '8714', gstRate: 28, purchasePrice: 200, sellingPrice: 450, minStock: 10, color: 'Charcoal Black', controllerNo: 'N/A', chargerNo: 'N/A' }
     ];
 
     const accessoriesData = [
-      { name: 'EV Smart Charger', type: 'Accessory', category: 'Chargers', hsnCode: '8504', gstRate: 18, purchasePrice: 2200, sellingPrice: 3800, minStock: 4 },
-      { name: 'Premium Helmet', type: 'Accessory', category: 'Safety', hsnCode: '6506', gstRate: 18, purchasePrice: 800, sellingPrice: 1500, minStock: 5 }
+      { name: 'EV Smart Charger', type: 'Accessory', category: 'Chargers', hsnCode: '8504', gstRate: 18, purchasePrice: 2200, sellingPrice: 3800, minStock: 4, color: 'Glossy White', controllerNo: 'N/A', chargerNo: 'CHG-SMART-60V' },
+      { name: 'Premium Helmet', type: 'Accessory', category: 'Safety', hsnCode: '6506', gstRate: 18, purchasePrice: 800, sellingPrice: 1500, minStock: 5, color: 'Matte Black', controllerNo: 'N/A', chargerNo: 'N/A' }
     ];
 
     const seededProducts = [];
@@ -166,6 +166,8 @@ const seedDB = async () => {
       batteryNo: 'BAT83918239023C',
       product: ev1Product._id,
       color: 'Glossy Black',
+      controllerNo: 'CTRL-DLX-7731',
+      chargerNo: 'CHG-DLX-6621',
       status: 'AVAILABLE',
       purchaseDate: new Date('2026-08-20'),
       costPrice: ev1Product.purchasePrice,
@@ -180,6 +182,8 @@ const seedDB = async () => {
       batteryNo: 'BAT910283920192F',
       product: ev2Product._id,
       color: 'Pearl White',
+      controllerNo: 'CTRL-LIM-5519',
+      chargerNo: 'CHG-LIM-4410',
       status: 'AVAILABLE',
       purchaseDate: new Date('2026-08-20'),
       costPrice: ev2Product.purchasePrice,
