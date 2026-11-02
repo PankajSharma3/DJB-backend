@@ -125,10 +125,12 @@ const createPurchase = async (req, res) => {
     // If there are vehicles received, check duplicate identifiers and create vehicle records
     if (vehicles && vehicles.length > 0) {
       for (const v of vehicles) {
-        if (!v.chassisNo || !v.motorNo || !v.batteryNo || !v.product || !v.color) {
+        if (!v.chassisNo || !v.motorNo || !v.batteryNo || !v.product || !v.color || !v.controllerNo || !v.chargerNo) {
           await session.abortTransaction();
           session.endSession();
-          return res.status(400).json({ message: 'Each vehicle must contain chassis, motor, battery numbers, color, and product model' });
+          return res.status(400).json({ 
+            message: 'Each vehicle must contain chassis, motor, battery, controller, and charger numbers, color, and product model' 
+          });
         }
         
         // Check duplicates
@@ -164,10 +166,11 @@ const createPurchase = async (req, res) => {
           chassisNo: v.chassisNo.toUpperCase(),
           motorNo: v.motorNo.toUpperCase(),
           batteryNo: v.batteryNo.toUpperCase(),
+          batteryType: v.batteryType || vehicleProduct.batteryType || '60V/30AH',
           product: v.product,
           color: v.color || vehicleProduct.color || 'Glossy Black',
-          controllerNo: (v.controllerNo || v.controllerNumber || vehicleProduct.controllerNo || '').toString().trim().toUpperCase(),
-          chargerNo: (v.chargerNo || v.chargerNumber || vehicleProduct.chargerNo || '').toString().trim().toUpperCase(),
+          controllerNo: (v.controllerNo || v.controllerNumber || '').toString().trim().toUpperCase(),
+          chargerNo: (v.chargerNo || v.chargerNumber || '').toString().trim().toUpperCase(),
           status: 'RECEIVED',
           purchaseInvoice: purchase._id,
           purchaseDate: purchase.date,

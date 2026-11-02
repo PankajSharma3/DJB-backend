@@ -40,6 +40,7 @@ const createProduct = async (req, res) => {
       sellingPrice, 
       minStock,
       color,
+      batteryType,
       controllerNo,
       chargerNo,
       controllerNumber,
@@ -49,10 +50,11 @@ const createProduct = async (req, res) => {
     const finalColor = (color || '').toString().trim();
     const finalControllerNo = (controllerNo || controllerNumber || '').toString().trim();
     const finalChargerNo = (chargerNo || chargerNumber || '').toString().trim();
+    const finalBatteryType = batteryType || (type === 'Vehicle' ? '60V/30AH' : 'N/A');
 
-    if (!name || !type || !hsnCode || gstRate === undefined || !finalColor || !finalControllerNo || !finalChargerNo) {
+    if (!name || !type || !hsnCode || gstRate === undefined || !finalColor) {
       return res.status(400).json({ 
-        message: 'Please provide all required fields: Name, Type, HSN Code, GST Rate, Color, Controller Number, and Charger Number are mandatory' 
+        message: 'Please provide all required fields: Name, Type, HSN Code, GST Rate, and Color are mandatory' 
       });
     }
     
@@ -66,6 +68,7 @@ const createProduct = async (req, res) => {
       sellingPrice: Number(sellingPrice) || 0,
       minStock: minStock !== undefined ? Number(minStock) : 2,
       color: finalColor,
+      batteryType: finalBatteryType,
       controllerNo: finalControllerNo,
       chargerNo: finalChargerNo
     });
@@ -77,7 +80,7 @@ const createProduct = async (req, res) => {
       action: 'CREATE',
       entity: 'Product',
       entityId: product._id.toString(),
-      details: `Created product: ${name} (${type}, Color: ${finalColor}, Controller: ${finalControllerNo}, Charger: ${finalChargerNo})`,
+      details: `Created product: ${name} (${type}, Color: ${finalColor}, Battery Type: ${finalBatteryType})`,
       afterData: product.toObject()
     });
     
@@ -108,12 +111,6 @@ const updateProduct = async (req, res) => {
 
     if (updateData.color !== undefined && !updateData.color.toString().trim()) {
       return res.status(400).json({ message: 'Color is required and cannot be empty' });
-    }
-    if (updateData.controllerNo !== undefined && !updateData.controllerNo.toString().trim()) {
-      return res.status(400).json({ message: 'Controller Number is required and cannot be empty' });
-    }
-    if (updateData.chargerNo !== undefined && !updateData.chargerNo.toString().trim()) {
-      return res.status(400).json({ message: 'Charger Number is required and cannot be empty' });
     }
 
     Object.assign(product, updateData);

@@ -22,6 +22,11 @@ const vehicleSchema = new mongoose.Schema({
     trim: true,
     uppercase: true
   },
+  batteryType: {
+    type: String,
+    enum: ['60V/30AH', '60V/40AH', '60V/52AH', 'N/A'],
+    default: '60V/30AH'
+  },
   product: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product',

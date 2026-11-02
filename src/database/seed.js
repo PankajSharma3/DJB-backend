@@ -96,10 +96,10 @@ const seedDB = async () => {
     console.log('Seeding Products (Vehicles and Spare Parts)...');
     
     const vehiclesData = [
-      { name: 'EZ Highspeed', type: 'Vehicle', category: 'Two Wheeler', hsnCode: '8711', gstRate: 5, purchasePrice: 70000, sellingPrice: 85000, minStock: 2, color: 'Metallic Grey', controllerNo: 'CTRL-EZ-9941', chargerNo: 'CHG-EZ-8812' },
-      { name: 'DLX', type: 'Vehicle', category: 'Two Wheeler', hsnCode: '8711', gstRate: 5, purchasePrice: 85000, sellingPrice: 105000, minStock: 2, color: 'Glossy Black', controllerNo: 'CTRL-DLX-7731', chargerNo: 'CHG-DLX-6621' },
-      { name: 'Limosa', type: 'Vehicle', category: 'Two Wheeler', hsnCode: '8711', gstRate: 5, purchasePrice: 120000, sellingPrice: 145000, minStock: 1, color: 'Pearl White', controllerNo: 'CTRL-LIM-5519', chargerNo: 'CHG-LIM-4410' },
-      { name: 'Mushak', type: 'Vehicle', category: 'Three Wheeler Cargo', hsnCode: '8711', gstRate: 5, purchasePrice: 180000, sellingPrice: 220000, minStock: 1, color: 'Royal Blue', controllerNo: 'CTRL-MSK-3382', chargerNo: 'CHG-MSK-2271' }
+      { name: 'EZ Highspeed', type: 'Vehicle', category: 'Two Wheeler', hsnCode: '8711', gstRate: 5, purchasePrice: 70000, sellingPrice: 85000, minStock: 2, color: 'Metallic Grey', batteryType: '60V/30AH' },
+      { name: 'DLX', type: 'Vehicle', category: 'Two Wheeler', hsnCode: '8711', gstRate: 5, purchasePrice: 85000, sellingPrice: 105000, minStock: 2, color: 'Glossy Black', batteryType: '60V/40AH' },
+      { name: 'Limosa', type: 'Vehicle', category: 'Two Wheeler', hsnCode: '8711', gstRate: 5, purchasePrice: 120000, sellingPrice: 145000, minStock: 1, color: 'Pearl White', batteryType: '60V/52AH' },
+      { name: 'Mushak', type: 'Vehicle', category: 'Three Wheeler Cargo', hsnCode: '8711', gstRate: 5, purchasePrice: 180000, sellingPrice: 220000, minStock: 1, color: 'Royal Blue', batteryType: '60V/52AH' }
     ];
     
     const partsData = [

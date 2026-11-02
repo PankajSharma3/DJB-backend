@@ -42,15 +42,20 @@ const productSchema = new mongoose.Schema({
     required: [true, 'Color is required'],
     trim: true
   },
+  batteryType: {
+    type: String,
+    enum: ['60V/30AH', '60V/40AH', '60V/52AH', 'N/A'],
+    default: '60V/30AH'
+  },
   controllerNo: {
     type: String,
-    required: [true, 'Controller number is required'],
-    trim: true
+    trim: true,
+    default: ''
   },
   chargerNo: {
     type: String,
-    required: [true, 'Charger number is required'],
-    trim: true
+    trim: true,
+    default: ''
   }
 }, {
   timestamps: true

@@ -67,6 +67,7 @@ const receiveVehicle = async (req, res) => {
       chassisNo: chassisNo.toString().trim().toUpperCase(),
       motorNo: motorNo.toString().trim().toUpperCase(),
       batteryNo: batteryNo.toString().trim().toUpperCase(),
+      batteryType: req.body.batteryType || selectedProduct.batteryType || '60V/30AH',
       product,
       color: color.toString().trim(),
       controllerNo: finalControllerNo,
