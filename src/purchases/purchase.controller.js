@@ -166,7 +166,7 @@ const createPurchase = async (req, res) => {
           chassisNo: v.chassisNo.toUpperCase(),
           motorNo: v.motorNo.toUpperCase(),
           batteryNo: v.batteryNo.toUpperCase(),
-          batteryType: v.batteryType || vehicleProduct.batteryType || '60V/30AH',
+          batteryType: vehicleProduct.batteryType || v.batteryType || '60V/30AH',
           product: v.product,
           color: v.color || vehicleProduct.color || 'Glossy Black',
           controllerNo: (v.controllerNo || v.controllerNumber || '').toString().trim().toUpperCase(),
