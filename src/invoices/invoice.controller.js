@@ -3,6 +3,7 @@ const Vehicle = require('../vehicles/vehicle.model');
 const Customer = require('../customers/customer.model');
 const Product = require('../products/product.model');
 const SalesOrder = require('../sales/sales_order.model');
+const Company = require('../company/company.model');
 const { logAudit } = require('../utils/audit');
 const mongoose = require('mongoose');
 
@@ -73,6 +74,9 @@ const createInvoice = async (req, res) => {
       return res.status(404).json({ message: 'Customer not found' });
     }
 
+    const companyDoc = await Company.findOne().session(session);
+    const taxCalculationMode = req.body.taxCalculationMode || companyDoc?.taxCalculationMode || 'EXCLUSIVE';
+
     const isInterState = customerDoc.gstin ? !customerDoc.gstin.startsWith('08') : (placeOfSupply !== 'Rajasthan');
     
     let taxableAmount = 0;
@@ -118,24 +122,37 @@ const createInvoice = async (req, res) => {
       const discount = Number(item.discount || 0);
       const gstRate = Number(productDoc.gstRate || 18);
       
-      const itemTaxable = (qty * price) - discount;
-      const itemGst = itemTaxable * (gstRate / 100);
-      const itemTotal = itemTaxable + itemGst;
+      let itemTaxable = 0;
+      let itemGst = 0;
+      let itemTotal = 0;
+
+      if (taxCalculationMode === 'INCLUSIVE') {
+        // Price entered already includes GST
+        const grossAmount = (qty * price) - discount;
+        itemTaxable = Number((grossAmount / (1 + (gstRate / 100))).toFixed(2));
+        itemGst = Number((grossAmount - itemTaxable).toFixed(2));
+        itemTotal = grossAmount;
+      } else {
+        // Price entered is exclusive of GST (GST added on top)
+        itemTaxable = Number(((qty * price) - discount).toFixed(2));
+        itemGst = Number((itemTaxable * (gstRate / 100)).toFixed(2));
+        itemTotal = Number((itemTaxable + itemGst).toFixed(2));
+      }
       
       taxableAmount += itemTaxable;
       
       const cgstRate = isInterState ? 0 : gstRate / 2;
-      const cgstVal = isInterState ? 0 : itemGst / 2;
+      const cgstVal = isInterState ? 0 : Number((itemGst / 2).toFixed(2));
       const sgstRate = isInterState ? 0 : gstRate / 2;
-      const sgstVal = isInterState ? 0 : itemGst / 2;
+      const sgstVal = isInterState ? 0 : Number((itemGst / 2).toFixed(2));
       const igstRate = isInterState ? gstRate : 0;
       const igstVal = isInterState ? itemGst : 0;
       
       if (isInterState) {
-        igstAmount += itemGst;
+        igstAmount += igstVal;
       } else {
-        cgstAmount += itemGst / 2;
-        sgstAmount += itemGst / 2;
+        cgstAmount += cgstVal;
+        sgstAmount += sgstVal;
       }
       
       totalAmount += itemTotal;
@@ -170,6 +187,7 @@ const createInvoice = async (req, res) => {
       invoiceDate: new Date(),
       customer,
       salesOrder: salesOrder || null,
+      taxCalculationMode,
       items: preparedItems,
       discountAmount: headerDiscount,
       taxableAmount,

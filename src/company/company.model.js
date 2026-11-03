@@ -58,6 +58,11 @@ const companySchema = new mongoose.Schema({
   invoiceSuffix: {
     type: String,
     default: '/26-27/'
+  },
+  taxCalculationMode: {
+    type: String,
+    enum: ['EXCLUSIVE', 'INCLUSIVE'],
+    default: 'EXCLUSIVE'
   }
 }, {
   timestamps: true
