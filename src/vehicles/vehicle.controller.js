@@ -141,8 +141,8 @@ const updateVehicle = async (req, res) => {
 const adjustStock = async (req, res) => {
   try {
     const { vehicleId, reason, newStatus } = req.body;
-    if (!vehicleId || !reason || !newStatus) {
-      return res.status(400).json({ message: 'Please provide vehicle ID, reason, and new status' });
+    if (!vehicleId || !newStatus) {
+      return res.status(400).json({ message: 'Please provide vehicle ID and new status' });
     }
     
     const vehicle = await Vehicle.findById(vehicleId);
@@ -159,7 +159,7 @@ const adjustStock = async (req, res) => {
       action: 'STOCK_ADJUST',
       entity: 'Vehicle',
       entityId: vehicle._id.toString(),
-      details: `Manual Stock Adjustment. Reason: ${reason}. Status: ${oldData.status} -> ${newStatus}`,
+      details: `Manual Stock Adjustment. Reason: ${reason || 'Status update'}. Status: ${oldData.status} -> ${newStatus}`,
       beforeData: oldData,
       afterData: vehicle.toObject()
     });

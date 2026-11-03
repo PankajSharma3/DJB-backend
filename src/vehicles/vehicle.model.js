@@ -52,7 +52,7 @@ const vehicleSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: ['IN TRANSIT', 'RECEIVED', 'AVAILABLE', 'RESERVED', 'SOLD', 'DELIVERED', 'RETURNED', 'DAMAGED', 'SERVICE'],
-    default: 'RECEIVED'
+    default: 'AVAILABLE'
   },
   purchaseInvoice: {
     type: mongoose.Schema.Types.ObjectId,

@@ -203,7 +203,7 @@ const createPurchase = async (req, res) => {
             color: v.color || vehicleProduct.color || 'Glossy Black',
             controllerNo: (v.controllerNo || v.controllerNumber || '').toString().trim().toUpperCase(),
             chargerNo: (v.chargerNo || v.chargerNumber || '').toString().trim().toUpperCase(),
-            status: 'RECEIVED',
+            status: 'AVAILABLE',
             purchaseInvoice: purchase._id,
             purchaseDate: purchase.date,
             costPrice: Number(v.costPrice) || vehicleProduct.purchasePrice,
