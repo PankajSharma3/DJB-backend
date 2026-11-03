@@ -126,6 +126,36 @@ const invoiceSchema = new mongoose.Schema({
   placeOfSupply: {
     type: String,
     default: 'Rajasthan'
+  },
+  buyerOrderNo: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  deliveryNote: {
+    type: String,
+    trim: true,
+    default: 'Showroom Handover'
+  },
+  refNoDate: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  dispatchedThrough: {
+    type: String,
+    trim: true,
+    default: 'Direct Handover'
+  },
+  termsOfDelivery: {
+    type: String,
+    trim: true,
+    default: 'Door Delivery'
+  },
+  ewayBillNo: {
+    type: String,
+    trim: true,
+    default: ''
   }
 }, {
   timestamps: true

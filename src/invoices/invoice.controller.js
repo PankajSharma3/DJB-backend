@@ -181,6 +181,18 @@ const createInvoice = async (req, res) => {
     const roundOff = Number((finalTotal - totalAmount).toFixed(2));
     
     const invoiceNo = await generateNextInvoiceNumber();
+    const invoiceSeq = invoiceNo.split('/').pop() || '0001';
+    const invoiceDateFormatted = new Date().toLocaleDateString('en-IN', { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric' 
+    });
+    const buyerOrderNo = req.body.buyerOrderNo || `DJB-ORD-${invoiceSeq}`;
+    const refNoDate = req.body.refNoDate || `REF/26-27/${invoiceSeq} & ${invoiceDateFormatted}`;
+    const deliveryNote = req.body.deliveryNote || 'Showroom Handover';
+    const dispatchedThrough = req.body.dispatchedThrough || 'Direct Handover';
+    const termsOfDelivery = req.body.termsOfDelivery || 'Door Delivery';
+    const ewayBillNo = req.body.ewayBillNo || (finalTotal > 50000 ? `EWB-${invoiceSeq}` : 'EXEMPTED (< 50K)');
     
     const invoice = new Invoice({
       invoiceNo,
@@ -199,7 +211,13 @@ const createInvoice = async (req, res) => {
       outstandingAmount: 0,
       paymentStatus: 'Paid',
       status: 'ACTIVE',
-      placeOfSupply: placeOfSupply || 'Rajasthan'
+      placeOfSupply: placeOfSupply || 'Rajasthan',
+      buyerOrderNo,
+      deliveryNote,
+      refNoDate,
+      dispatchedThrough,
+      termsOfDelivery,
+      ewayBillNo
     });
     
     await invoice.save({ session });
