@@ -63,6 +63,14 @@ const companySchema = new mongoose.Schema({
     type: String,
     enum: ['EXCLUSIVE', 'INCLUSIVE'],
     default: 'EXCLUSIVE'
+  },
+  phone: {
+    type: String,
+    default: '+91 7737940023, +91 9099019008'
+  },
+  email: {
+    type: String,
+    default: 'djbevworld@gmail.com'
   }
 }, {
   timestamps: true
