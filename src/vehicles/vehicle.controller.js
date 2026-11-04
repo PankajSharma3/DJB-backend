@@ -6,7 +6,7 @@ const getVehicles = async (req, res) => {
   try {
     const { status, product, sellable } = req.query;
     const filter = {};
-    if (sellable === 'true') {
+    if (sellable === 'true' || (status && status.toString().trim().toUpperCase() === 'AVAILABLE')) {
       filter.status = 'AVAILABLE';
     } else if (status) {
       filter.status = status.toString().trim().toUpperCase();

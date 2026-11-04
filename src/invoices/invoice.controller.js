@@ -517,6 +517,17 @@ const updateInvoice = async (req, res) => {
             session.endSession();
             return res.status(404).json({ message: `Vehicle unit ${item.vehicle} not found` });
           }
+
+          if (vehicleDoc.status === 'RETURNED') {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({ message: `Vehicle chassis ${vehicleDoc.chassisNo} cannot be assigned because its status is RETURNED.` });
+          }
+          if (vehicleDoc.status === 'DAMAGED') {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({ message: `Vehicle chassis ${vehicleDoc.chassisNo} cannot be assigned because its status is DAMAGED.` });
+          }
           
           vehicleId = vehicleDoc._id;
           vehicleDoc.status = 'SOLD';
