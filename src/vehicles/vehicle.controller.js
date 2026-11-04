@@ -7,9 +7,9 @@ const getVehicles = async (req, res) => {
     const { status, product, sellable } = req.query;
     const filter = {};
     if (sellable === 'true') {
-      filter.status = { $regex: /^AVAILABLE$/i };
+      filter.status = { $regex: /^\s*AVAILABLE\s*$/i };
     } else if (status) {
-      filter.status = { $regex: new RegExp(`^${status.toString().trim()}$`, 'i') };
+      filter.status = { $regex: new RegExp(`^\\s*${status.toString().trim()}\\s*$`, 'i') };
     }
     if (product) filter.product = product;
     

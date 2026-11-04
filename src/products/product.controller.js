@@ -27,7 +27,7 @@ const getProducts = async (req, res) => {
       if (!stockMap[pId]) {
         stockMap[pId] = { available: 0, reserved: 0, returned: 0, sold: 0, inTransit: 0, damaged: 0, service: 0, total: 0 };
       }
-      const st = (vc._id.status || '').toUpperCase();
+      const st = (vc._id.status || '').toString().trim().toUpperCase();
       if (st === 'AVAILABLE') stockMap[pId].available += vc.count;
       else if (st === 'RESERVED') stockMap[pId].reserved += vc.count;
       else if (st === 'RETURNED') stockMap[pId].returned += vc.count;
