@@ -45,7 +45,7 @@ const getProducts = async (req, res) => {
         stockSummary: s,
         availableStock: p.type === 'Vehicle' ? s.available : (p.minStock || 10),
         isAvailableForSale: p.type === 'Vehicle' ? s.available > 0 : true,
-        isAvailableForQuote: p.type === 'Vehicle' ? (s.available > 0 || s.inTransit > 0) : true
+        isAvailableForQuote: p.type === 'Vehicle' ? s.available > 0 : true
       };
     });
 

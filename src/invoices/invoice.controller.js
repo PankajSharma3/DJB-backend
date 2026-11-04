@@ -112,13 +112,20 @@ const createInvoice = async (req, res) => {
           return res.status(404).json({ message: `Vehicle unit ${item.vehicle} not found` });
         }
         
-        const vStat = (vehicleDoc.status || '').toString().trim().toUpperCase();
-        if (vStat !== 'AVAILABLE') {
+        if (vehicleDoc.status === 'RETURNED') {
           await session.abortTransaction();
           session.endSession();
-          return res.status(400).json({ 
-            message: `Vehicle chassis ${vehicleDoc.chassisNo} cannot be billed. Only units with status AVAILABLE can be invoiced (Current Status: ${vehicleDoc.status}).` 
-          });
+          return res.status(400).json({ message: `Vehicle chassis ${vehicleDoc.chassisNo} cannot be sold or invoiced because its status is RETURNED.` });
+        }
+        if (vehicleDoc.status === 'DAMAGED') {
+          await session.abortTransaction();
+          session.endSession();
+          return res.status(400).json({ message: `Vehicle chassis ${vehicleDoc.chassisNo} cannot be sold or invoiced because its status is DAMAGED.` });
+        }
+        if (vehicleDoc.status !== 'AVAILABLE' && vehicleDoc.status !== 'RESERVED') {
+          await session.abortTransaction();
+          session.endSession();
+          return res.status(400).json({ message: `Vehicle chassis ${vehicleDoc.chassisNo} is not saleable (Current Status: ${vehicleDoc.status})` });
         }
         
         vehicleId = vehicleDoc._id;
@@ -509,15 +516,6 @@ const updateInvoice = async (req, res) => {
             await session.abortTransaction();
             session.endSession();
             return res.status(404).json({ message: `Vehicle unit ${item.vehicle} not found` });
-          }
-          
-          const vStat = (vehicleDoc.status || '').toString().trim().toUpperCase();
-          if (vStat !== 'AVAILABLE') {
-            await session.abortTransaction();
-            session.endSession();
-            return res.status(400).json({ 
-              message: `Vehicle chassis ${vehicleDoc.chassisNo} cannot be billed. Only units with status AVAILABLE can be invoiced (Current Status: ${vehicleDoc.status}).` 
-            });
           }
           
           vehicleId = vehicleDoc._id;
