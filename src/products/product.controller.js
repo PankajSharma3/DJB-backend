@@ -1,4 +1,5 @@
 const Product = require('./product.model');
+const Vehicle = require('../vehicles/vehicle.model');
 const { logAudit } = require('../utils/audit');
 
 const getProducts = async (req, res) => {
@@ -8,7 +9,47 @@ const getProducts = async (req, res) => {
     if (type) filter.type = type;
     
     const products = await Product.find(filter).sort({ name: 1 }).lean();
-    res.json(products);
+    
+    // Aggregate real-time vehicle stock status breakdown per product
+    const productIds = products.map(p => p._id);
+    const vehicleCounts = await Vehicle.aggregate([
+      { $match: { product: { $in: productIds } } },
+      { $group: {
+          _id: { product: '$product', status: '$status' },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const stockMap = {};
+    vehicleCounts.forEach(vc => {
+      const pId = vc._id.product.toString();
+      if (!stockMap[pId]) {
+        stockMap[pId] = { available: 0, reserved: 0, returned: 0, sold: 0, inTransit: 0, damaged: 0, service: 0, total: 0 };
+      }
+      const st = (vc._id.status || '').toUpperCase();
+      if (st === 'AVAILABLE') stockMap[pId].available += vc.count;
+      else if (st === 'RESERVED') stockMap[pId].reserved += vc.count;
+      else if (st === 'RETURNED') stockMap[pId].returned += vc.count;
+      else if (st === 'SOLD' || st === 'DELIVERED') stockMap[pId].sold += vc.count;
+      else if (st === 'IN TRANSIT' || st === 'RECEIVED') stockMap[pId].inTransit += vc.count;
+      else if (st === 'DAMAGED') stockMap[pId].damaged += vc.count;
+      else if (st === 'SERVICE') stockMap[pId].service += vc.count;
+      stockMap[pId].total += vc.count;
+    });
+
+    const enrichedProducts = products.map(p => {
+      const s = stockMap[p._id.toString()] || { available: 0, reserved: 0, returned: 0, sold: 0, inTransit: 0, damaged: 0, service: 0, total: 0 };
+      return {
+        ...p,
+        stockSummary: s,
+        availableStock: p.type === 'Vehicle' ? s.available : (p.minStock || 10),
+        isAvailableForSale: p.type === 'Vehicle' ? s.available > 0 : true,
+        isAvailableForQuote: p.type === 'Vehicle' ? (s.available > 0 || s.inTransit > 0) : true
+      };
+    });
+
+    res.json(enrichedProducts);
   } catch (error) {
     console.error('getProducts error:', error);
     res.status(500).json({ message: 'Server error' });

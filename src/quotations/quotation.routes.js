@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getQuotations, getQuotationById, createQuotation, updateQuotationStatus } = require('./quotation.controller');
+const { getQuotations, getQuotationById, createQuotation, updateQuotationStatus, deleteQuotation } = require('./quotation.controller');
 const { protect } = require('../middleware/auth');
 
 router.use(protect);
@@ -11,6 +11,7 @@ router.route('/')
 
 router.route('/:id')
   .get(getQuotationById)
-  .put(updateQuotationStatus);
+  .put(updateQuotationStatus)
+  .delete(deleteQuotation);
 
 module.exports = router;

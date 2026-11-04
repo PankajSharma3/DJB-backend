@@ -168,9 +168,35 @@ const updateQuotationStatus = async (req, res) => {
   }
 };
 
+const deleteQuotation = async (req, res) => {
+  try {
+    const quotation = await Quotation.findById(req.params.id);
+    if (!quotation) {
+      return res.status(404).json({ message: 'Quotation not found' });
+    }
+    
+    await Quotation.findByIdAndDelete(req.params.id);
+    
+    await logAudit({
+      user: req.user.email,
+      action: 'DELETE',
+      entity: 'Quotation',
+      entityId: req.params.id,
+      details: `Deleted quotation ${quotation.quotationNo}`,
+      beforeData: quotation.toObject()
+    });
+    
+    res.json({ message: 'Quotation deleted successfully' });
+  } catch (error) {
+    console.error('deleteQuotation error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 module.exports = {
   getQuotations,
   getQuotationById,
   createQuotation,
-  updateQuotationStatus
+  updateQuotationStatus,
+  deleteQuotation
 };

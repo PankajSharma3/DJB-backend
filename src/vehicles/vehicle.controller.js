@@ -4,9 +4,13 @@ const { logAudit } = require('../utils/audit');
 
 const getVehicles = async (req, res) => {
   try {
-    const { status, product } = req.query;
+    const { status, product, sellable } = req.query;
     const filter = {};
-    if (status) filter.status = status;
+    if (sellable === 'true') {
+      filter.status = 'AVAILABLE';
+    } else if (status) {
+      filter.status = status.toString().trim().toUpperCase();
+    }
     if (product) filter.product = product;
     
     const vehicles = await Vehicle.find(filter)

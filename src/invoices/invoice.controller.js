@@ -94,6 +94,14 @@ const createInvoice = async (req, res) => {
         session.endSession();
         return res.status(404).json({ message: `Product ${item.product} not found` });
       }
+
+      if (productDoc.type === 'Vehicle' && !item.vehicle) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ 
+          message: `Please select an available vehicle chassis for ${productDoc.name}. Units with status RETURNED, DAMAGED, or SOLD cannot be invoiced.` 
+        });
+      }
       
       let vehicleId = null;
       if (item.vehicle) {
@@ -104,10 +112,20 @@ const createInvoice = async (req, res) => {
           return res.status(404).json({ message: `Vehicle unit ${item.vehicle} not found` });
         }
         
+        if (vehicleDoc.status === 'RETURNED') {
+          await session.abortTransaction();
+          session.endSession();
+          return res.status(400).json({ message: `Vehicle chassis ${vehicleDoc.chassisNo} cannot be sold or invoiced because its status is RETURNED.` });
+        }
+        if (vehicleDoc.status === 'DAMAGED') {
+          await session.abortTransaction();
+          session.endSession();
+          return res.status(400).json({ message: `Vehicle chassis ${vehicleDoc.chassisNo} cannot be sold or invoiced because its status is DAMAGED.` });
+        }
         if (vehicleDoc.status !== 'AVAILABLE' && vehicleDoc.status !== 'RESERVED') {
           await session.abortTransaction();
           session.endSession();
-          return res.status(400).json({ message: `Vehicle ${vehicleDoc.chassisNo} is not saleable (Status: ${vehicleDoc.status})` });
+          return res.status(400).json({ message: `Vehicle chassis ${vehicleDoc.chassisNo} is not saleable (Current Status: ${vehicleDoc.status})` });
         }
         
         vehicleId = vehicleDoc._id;
