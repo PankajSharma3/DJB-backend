@@ -102,31 +102,50 @@ const updateVehicle = async (req, res) => {
     if (!vehicle) {
       return res.status(404).json({ message: 'Vehicle not found' });
     }
+
+    const updates = { ...req.body };
+    if (updates.chassisNo) updates.chassisNo = updates.chassisNo.trim().toUpperCase();
+    if (updates.motorNo) updates.motorNo = updates.motorNo.trim().toUpperCase();
+    if (updates.batteryNo) updates.batteryNo = updates.batteryNo.trim().toUpperCase();
+    if (updates.controllerNo !== undefined) updates.controllerNo = updates.controllerNo.toString().trim().toUpperCase();
+    if (updates.chargerNo !== undefined) updates.chargerNo = updates.chargerNo.toString().trim().toUpperCase();
+    if (updates.color) updates.color = updates.color.toString().trim();
+    if (updates.costPrice !== undefined) updates.costPrice = Number(updates.costPrice);
+    if (updates.sellingPrice !== undefined) updates.sellingPrice = Number(updates.sellingPrice);
     
     // Check duplicates if identifiers are updated
-    if (req.body.chassisNo && req.body.chassisNo !== vehicle.chassisNo) {
-      const duplicate = await Vehicle.findOne({ chassisNo: req.body.chassisNo });
-      if (duplicate) return res.status(400).json({ message: 'Duplicate Chassis Number' });
+    if (updates.chassisNo && updates.chassisNo !== vehicle.chassisNo) {
+      const duplicate = await Vehicle.findOne({ chassisNo: updates.chassisNo, _id: { $ne: vehicle._id } });
+      if (duplicate) return res.status(400).json({ message: `Duplicate Chassis Number: ${updates.chassisNo}` });
     }
-    if (req.body.motorNo && req.body.motorNo !== vehicle.motorNo) {
-      const duplicate = await Vehicle.findOne({ motorNo: req.body.motorNo });
-      if (duplicate) return res.status(400).json({ message: 'Duplicate Motor Number' });
+    if (updates.motorNo && updates.motorNo !== vehicle.motorNo) {
+      const duplicate = await Vehicle.findOne({ motorNo: updates.motorNo, _id: { $ne: vehicle._id } });
+      if (duplicate) return res.status(400).json({ message: `Duplicate Motor Number: ${updates.motorNo}` });
     }
-    if (req.body.batteryNo && req.body.batteryNo !== vehicle.batteryNo) {
-      const duplicate = await Vehicle.findOne({ batteryNo: req.body.batteryNo });
-      if (duplicate) return res.status(400).json({ message: 'Duplicate Battery Number' });
+    if (updates.batteryNo && updates.batteryNo !== vehicle.batteryNo) {
+      const duplicate = await Vehicle.findOne({ batteryNo: updates.batteryNo, _id: { $ne: vehicle._id } });
+      if (duplicate) return res.status(400).json({ message: `Duplicate Battery Number: ${updates.batteryNo}` });
+    }
+
+    // Verify model product if changed
+    if (updates.product && updates.product.toString() !== vehicle.product?.toString()) {
+      const prod = await Product.findById(updates.product);
+      if (!prod) {
+        return res.status(400).json({ message: 'Selected vehicle product model not found' });
+      }
     }
     
     const oldData = vehicle.toObject();
-    Object.assign(vehicle, req.body);
+    Object.assign(vehicle, updates);
     await vehicle.save();
+    await vehicle.populate('product');
     
     await logAudit({
-      user: req.user.email,
+      user: req.user?.email || 'admin@djbevworld.com',
       action: 'UPDATE',
       entity: 'Vehicle',
       entityId: vehicle._id.toString(),
-      details: `Updated vehicle chassis ${vehicle.chassisNo}. Status updated to: ${vehicle.status}`,
+      details: `Updated vehicle chassis ${vehicle.chassisNo}. Model: ${vehicle.product?.name || 'N/A'}. Status: ${vehicle.status}`,
       beforeData: oldData,
       afterData: vehicle.toObject()
     });
@@ -134,7 +153,7 @@ const updateVehicle = async (req, res) => {
     res.json(vehicle);
   } catch (error) {
     console.error('updateVehicle error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: error.message || 'Server error' });
   }
 };
 

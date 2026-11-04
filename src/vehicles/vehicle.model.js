@@ -24,7 +24,7 @@ const vehicleSchema = new mongoose.Schema({
   },
   batteryType: {
     type: String,
-    enum: ['60V/30AH', '60V/40AH', '60V/52AH', 'N/A'],
+    trim: true,
     default: '60V/30AH'
   },
   product: {
