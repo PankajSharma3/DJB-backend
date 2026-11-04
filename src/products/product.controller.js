@@ -4,7 +4,7 @@ const { logAudit } = require('../utils/audit');
 
 const getProducts = async (req, res) => {
   try {
-    const { type } = req.query;
+    const { type, available, sellable } = req.query;
     const filter = {};
     if (type) filter.type = type;
     
@@ -49,7 +49,12 @@ const getProducts = async (req, res) => {
       };
     });
 
-    res.json(enrichedProducts);
+    let resultProducts = enrichedProducts;
+    if (available === 'true' || sellable === 'true') {
+      resultProducts = resultProducts.filter(p => p.isAvailableForSale);
+    }
+
+    res.json(resultProducts);
   } catch (error) {
     console.error('getProducts error:', error);
     res.status(500).json({ message: 'Server error' });
