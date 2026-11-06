@@ -192,11 +192,18 @@ const createInvoice = async (req, res) => {
       });
     }
     
-    const headerDiscount = Number(discountAmount || 0);
-    taxableAmount = Math.max(0, taxableAmount - headerDiscount);
+    const headerDiscount = Math.max(0, Number(discountAmount || 0));
+    const grossItemsTotal = totalAmount;
+    const discountedTotal = Math.max(0, grossItemsTotal - headerDiscount);
+    const finalTotal = Math.round(discountedTotal);
+    const roundOff = Number((finalTotal - discountedTotal).toFixed(2));
     
-    const finalTotal = Math.round(totalAmount);
-    const roundOff = Number((finalTotal - totalAmount).toFixed(2));
+    if (taxCalculationMode === 'INCLUSIVE' && grossItemsTotal > 0) {
+      taxableAmount = Math.max(0, taxableAmount - (headerDiscount * (taxableAmount / grossItemsTotal)));
+    } else {
+      taxableAmount = Math.max(0, taxableAmount - headerDiscount);
+    }
+    taxableAmount = Number(taxableAmount.toFixed(2));
     
     const invoiceNo = await generateNextInvoiceNumber();
     const invoiceSeq = invoiceNo.split('/').pop() || '0001';
@@ -568,18 +575,25 @@ const updateInvoice = async (req, res) => {
         });
       }
       
-      const headerDiscount = Number(discountAmount !== undefined ? discountAmount : invoice.discountAmount);
-      taxableAmount = Math.max(0, taxableAmount - headerDiscount);
+      const headerDiscount = Math.max(0, Number(discountAmount !== undefined ? discountAmount : invoice.discountAmount));
+      const grossItemsTotal = totalAmount;
+      const discountedTotal = Math.max(0, grossItemsTotal - headerDiscount);
+      const finalTotal = Math.round(discountedTotal);
+      const roundOff = Number((finalTotal - discountedTotal).toFixed(2));
       
-      const finalTotal = Math.round(totalAmount);
-      const roundOff = Number((finalTotal - totalAmount).toFixed(2));
+      const taxMode = invoice.taxCalculationMode || 'EXCLUSIVE';
+      if (taxMode === 'INCLUSIVE' && grossItemsTotal > 0) {
+        taxableAmount = Math.max(0, taxableAmount - (headerDiscount * (taxableAmount / grossItemsTotal)));
+      } else {
+        taxableAmount = Math.max(0, taxableAmount - headerDiscount);
+      }
       
       invoice.items = preparedItems;
       invoice.discountAmount = headerDiscount;
-      invoice.taxableAmount = taxableAmount;
-      invoice.cgstAmount = cgstAmount;
-      invoice.sgstAmount = sgstAmount;
-      invoice.igstAmount = igstAmount;
+      invoice.taxableAmount = Number(taxableAmount.toFixed(2));
+      invoice.cgstAmount = Number(cgstAmount.toFixed(2));
+      invoice.sgstAmount = Number(sgstAmount.toFixed(2));
+      invoice.igstAmount = Number(igstAmount.toFixed(2));
       invoice.roundOff = roundOff;
       
       // Calculate new outstandingAmount
@@ -598,9 +612,30 @@ const updateInvoice = async (req, res) => {
     } else {
       // If items not updated, but discount updated
       if (discountAmount !== undefined && invoice.status === 'ACTIVE') {
-        const diffDiscount = Number(discountAmount) - invoice.discountAmount;
-        invoice.discountAmount = Number(discountAmount);
-        invoice.taxableAmount = Math.max(0, invoice.taxableAmount - diffDiscount);
+        const newDiscount = Math.max(0, Number(discountAmount || 0));
+        const oldDiscount = Number(invoice.discountAmount || 0);
+        const diffDiscount = newDiscount - oldDiscount;
+        invoice.discountAmount = newDiscount;
+        
+        // Recompute final total based on previous items total
+        const itemsGross = (invoice.items || []).reduce((acc, it) => acc + (Number(it.total) || 0), 0);
+        const baseForDiscount = itemsGross > 0 ? itemsGross : (invoice.totalAmount + oldDiscount);
+        const newDiscountedTotal = Math.max(0, baseForDiscount - newDiscount);
+        const newFinalTotal = Math.round(newDiscountedTotal);
+        
+        invoice.roundOff = Number((newFinalTotal - newDiscountedTotal).toFixed(2));
+        invoice.totalAmount = newFinalTotal;
+        invoice.taxableAmount = Math.max(0, Number((invoice.taxableAmount - diffDiscount).toFixed(2)));
+        
+        const paymentsMade = Math.max(0, oldData.totalAmount - oldData.outstandingAmount);
+        invoice.outstandingAmount = Math.max(0, newFinalTotal - paymentsMade);
+        if (invoice.outstandingAmount === 0) {
+          invoice.paymentStatus = 'Paid';
+        } else if (invoice.outstandingAmount < newFinalTotal) {
+          invoice.paymentStatus = 'Partial';
+        } else {
+          invoice.paymentStatus = 'Unpaid';
+        }
       }
     }
 

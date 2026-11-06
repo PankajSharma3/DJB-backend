@@ -94,14 +94,14 @@ const createQuotation = async (req, res) => {
     }
     
     // Apply discountAmount if provided at header level
-    const headerDiscount = Number(discountAmount || 0);
+    const headerDiscount = Math.max(0, Number(discountAmount || 0));
+    const grossTotal = totalAmount;
+    const discountedTotal = Math.max(0, grossTotal - headerDiscount);
     taxableAmount = Math.max(0, taxableAmount - headerDiscount);
-    // Re-adjust GST based on header discount if applicable (simpler to calculate on final total)
-    // For simplicity, we keep items calculations, but can adjust totals
     
     // Rounding off to nearest integer
-    const finalTotal = Math.round(totalAmount);
-    const roundOff = Number((finalTotal - totalAmount).toFixed(2));
+    const finalTotal = Math.round(discountedTotal);
+    const roundOff = Number((finalTotal - discountedTotal).toFixed(2));
     
     const quotation = new Quotation({
       quotationNo,
