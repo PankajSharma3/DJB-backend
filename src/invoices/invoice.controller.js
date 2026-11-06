@@ -75,7 +75,7 @@ const createInvoice = async (req, res) => {
     }
 
     const companyDoc = await Company.findOne().session(session);
-    const taxCalculationMode = req.body.taxCalculationMode || companyDoc?.taxCalculationMode || 'EXCLUSIVE';
+    const taxCalculationMode = req.body.taxCalculationMode || companyDoc?.taxCalculationMode || 'INCLUSIVE';
 
     const isInterState = customerDoc.gstin ? !customerDoc.gstin.startsWith('08') : (placeOfSupply !== 'Rajasthan');
     
@@ -415,7 +415,7 @@ const updateInvoice = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
-    const { customer, placeOfSupply, items, discountAmount, status, paymentStatus } = req.body;
+    const { customer, placeOfSupply, items, discountAmount, status, paymentStatus, taxCalculationMode } = req.body;
     
     const invoice = await Invoice.findById(req.params.id).session(session);
     if (!invoice) {
@@ -445,9 +445,12 @@ const updateInvoice = async (req, res) => {
       invoice.customer = customer;
     }
 
-    // 2. Place of supply
+    // 2. Place of supply & Tax mode
     if (placeOfSupply !== undefined) {
       invoice.placeOfSupply = placeOfSupply;
+    }
+    if (taxCalculationMode !== undefined) {
+      invoice.taxCalculationMode = taxCalculationMode;
     }
 
     const currentPlaceOfSupply = placeOfSupply || invoice.placeOfSupply;
@@ -535,24 +538,38 @@ const updateInvoice = async (req, res) => {
         const price = Number(item.price || (productDoc ? productDoc.sellingPrice : 0));
         const discount = Number(item.discount || 0);
         
-        const itemTaxable = (qty * price) - discount;
-        const itemGst = itemTaxable * (gstRate / 100);
-        const itemTotal = itemTaxable + itemGst;
+        let itemTaxable = 0;
+        let itemGst = 0;
+        let itemTotal = 0;
+
+        const effectiveTaxMode = taxCalculationMode || invoice.taxCalculationMode || 'INCLUSIVE';
+        if (effectiveTaxMode === 'INCLUSIVE') {
+          // Price entered already includes GST
+          const grossAmount = (qty * price) - discount;
+          itemTaxable = Number((grossAmount / (1 + (gstRate / 100))).toFixed(2));
+          itemGst = Number((grossAmount - itemTaxable).toFixed(2));
+          itemTotal = grossAmount;
+        } else {
+          // Price entered is exclusive of GST (GST added on top)
+          itemTaxable = Number(((qty * price) - discount).toFixed(2));
+          itemGst = Number((itemTaxable * (gstRate / 100)).toFixed(2));
+          itemTotal = Number((itemTaxable + itemGst).toFixed(2));
+        }
         
         taxableAmount += itemTaxable;
         
         const cgstRate = isInterState ? 0 : gstRate / 2;
-        const cgstVal = isInterState ? 0 : itemGst / 2;
+        const cgstVal = isInterState ? 0 : Number((itemGst / 2).toFixed(2));
         const sgstRate = isInterState ? 0 : gstRate / 2;
-        const sgstVal = isInterState ? 0 : itemGst / 2;
+        const sgstVal = isInterState ? 0 : Number((itemGst / 2).toFixed(2));
         const igstRate = isInterState ? gstRate : 0;
         const igstVal = isInterState ? itemGst : 0;
         
         if (isInterState) {
-          igstAmount += itemGst;
+          igstAmount += igstVal;
         } else {
-          cgstAmount += itemGst / 2;
-          sgstAmount += itemGst / 2;
+          cgstAmount += cgstVal;
+          sgstAmount += sgstVal;
         }
         
         totalAmount += itemTotal;
