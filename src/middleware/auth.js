@@ -22,4 +22,16 @@ const protect = async (req, res, next) => {
   }
 };
 
-module.exports = { protect };
+const authorize = (...roles) => {
+  return (req, res, next) => {
+    const userRole = req.user?.role || 'admin';
+    if (!req.user || !roles.includes(userRole)) {
+      return res.status(403).json({
+        message: `Access denied. Role '${userRole}' is not permitted to perform this action.`
+      });
+    }
+    next();
+  };
+};
+
+module.exports = { protect, authorize };

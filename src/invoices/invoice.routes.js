@@ -8,7 +8,7 @@ const {
   updateInvoice, 
   deleteInvoice 
 } = require('./invoice.controller');
-const { protect } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 
 router.use(protect);
 
@@ -19,8 +19,8 @@ router.route('/')
 router.route('/:id')
   .get(getInvoiceById)
   .put(updateInvoice)
-  .delete(deleteInvoice);
+  .delete(authorize('admin'), deleteInvoice);
 
-router.post('/:id/cancel', cancelInvoice);
+router.post('/:id/cancel', authorize('admin'), cancelInvoice);
 
 module.exports = router;

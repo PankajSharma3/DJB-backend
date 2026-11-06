@@ -4,6 +4,7 @@ const Customer = require('../customers/customer.model');
 const Product = require('../products/product.model');
 const SalesOrder = require('../sales/sales_order.model');
 const Company = require('../company/company.model');
+const Payment = require('../payments/payment.model');
 const { logAudit } = require('../utils/audit');
 const mongoose = require('mongoose');
 
@@ -214,6 +215,9 @@ const createInvoice = async (req, res) => {
     const termsOfDelivery = req.body.termsOfDelivery || 'Door Delivery';
     const ewayBillNo = req.body.ewayBillNo || (finalTotal > 50000 ? `EWB-${invoiceSeq}` : 'EXEMPTED (< 50K)');
     
+    const paymentMethod = req.body.paymentMethod || 'Cash';
+    const utrNo = (req.body.utrNo || '').toString().trim();
+
     const invoice = new Invoice({
       invoiceNo,
       invoiceDate: new Date(),
@@ -230,6 +234,8 @@ const createInvoice = async (req, res) => {
       totalAmount: finalTotal,
       outstandingAmount: 0,
       paymentStatus: 'Paid',
+      paymentMethod,
+      utrNo: paymentMethod === 'Cash' ? '' : utrNo,
       status: 'ACTIVE',
       placeOfSupply: placeOfSupply || 'Rajasthan',
       buyerOrderNo,
@@ -245,6 +251,22 @@ const createInvoice = async (req, res) => {
     // Update customer outstanding receivable balance
     customerDoc.balance += invoice.outstandingAmount; // Adds 0 since invoice is Paid
     await customerDoc.save({ session });
+
+    // Record payment receipt
+    const paymentMode = paymentMethod === 'UPI' ? 'UPI' : (paymentMethod === 'Cash' ? 'Cash' : (paymentMethod === 'Bank Transfer' ? 'NEFT/RTGS' : (paymentMethod === 'Cheque' ? 'Cheque' : 'UPI')));
+    const paymentReceipt = new Payment({
+      paymentNo: 'REC-' + Date.now(),
+      date: new Date(),
+      type: 'Receipt',
+      partyType: 'Customer',
+      customer: customerDoc._id,
+      amount: finalTotal,
+      mode: paymentMode,
+      referenceNo: paymentMethod === 'Cash' ? 'CASH' : utrNo,
+      invoice: invoice._id,
+      notes: `Sales invoice payment for ${invoiceNo} via ${paymentMethod}${utrNo ? ` (UTR: ${utrNo})` : ''}`
+    });
+    await paymentReceipt.save({ session });
     
     // If invoice is created from a sales order (reservation), update booking status to INVOICED
     if (salesOrder) {
@@ -629,6 +651,13 @@ const updateInvoice = async (req, res) => {
       } else if (paymentStatus === 'Unpaid') {
         invoice.outstandingAmount = invoice.totalAmount;
       }
+    }
+
+    if (req.body.paymentMethod !== undefined) {
+      invoice.paymentMethod = req.body.paymentMethod;
+    }
+    if (req.body.utrNo !== undefined) {
+      invoice.utrNo = invoice.paymentMethod === 'Cash' ? '' : (req.body.utrNo || '').toString().trim();
     }
 
     await invoice.save({ session });

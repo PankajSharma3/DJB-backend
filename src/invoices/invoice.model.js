@@ -113,6 +113,16 @@ const invoiceSchema = new mongoose.Schema({
     enum: ['Paid', 'Partial', 'Unpaid'],
     default: 'Paid'
   },
+  paymentMethod: {
+    type: String,
+    enum: ['Cash', 'UPI', 'Online', 'Bank Transfer', 'Cheque', 'Finance', 'Other'],
+    default: 'Cash'
+  },
+  utrNo: {
+    type: String,
+    trim: true,
+    default: ''
+  },
   outstandingAmount: {
     type: Number,
     required: true,

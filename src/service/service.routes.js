@@ -8,7 +8,7 @@ const {
   deleteJobCard, 
   generateInvoiceFromService 
 } = require('./service.controller');
-const { protect } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 
 router.use(protect);
 
@@ -19,7 +19,7 @@ router.route('/')
 router.route('/:id')
   .get(getJobCardById)
   .put(updateJobCard)
-  .delete(deleteJobCard);
+  .delete(authorize('admin'), deleteJobCard);
 
 router.post('/:id/generate-invoice', generateInvoiceFromService);
 

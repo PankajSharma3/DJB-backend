@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getPurchases, getPurchaseById, createPurchase, updatePurchase, deletePurchase } = require('./purchase.controller');
-const { protect } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 
 router.use(protect);
 
@@ -12,6 +12,6 @@ router.route('/')
 router.route('/:id')
   .get(getPurchaseById)
   .put(updatePurchase)
-  .delete(deletePurchase);
+  .delete(authorize('admin'), deletePurchase);
 
 module.exports = router;

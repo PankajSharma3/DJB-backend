@@ -139,6 +139,13 @@ const createPurchase = async (req, res) => {
           gstAmount: itemGst,
           totalAmount: itemTotal
         });
+
+        // Keep product purchase price and selling price in sync with latest procurement
+        const prodUpdate = { purchasePrice: price };
+        if (item.sellingPrice) {
+          prodUpdate.sellingPrice = Number(item.sellingPrice);
+        }
+        await Product.findByIdAndUpdate(item.product, prodUpdate, { session: sess });
       }
 
       const purchase = new Purchase({

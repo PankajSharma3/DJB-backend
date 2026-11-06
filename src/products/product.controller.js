@@ -161,6 +161,14 @@ const updateProduct = async (req, res) => {
 
     Object.assign(product, updateData);
     await product.save();
+
+    // If sellingPrice changed on a vehicle product, cascade update all AVAILABLE vehicle units
+    if (updateData.sellingPrice !== undefined) {
+      await Vehicle.updateMany(
+        { product: product._id, status: 'AVAILABLE' },
+        { sellingPrice: Number(updateData.sellingPrice) }
+      );
+    }
     
     await logAudit({
       user: req.user.email,
