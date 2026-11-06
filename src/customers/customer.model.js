@@ -23,6 +23,11 @@ const customerSchema = new mongoose.Schema({
     uppercase: true,
     default: ''
   },
+  aadhar: {
+    type: String,
+    trim: true,
+    default: ''
+  },
   gstin: {
     type: String,
     trim: true,

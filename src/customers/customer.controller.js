@@ -37,7 +37,7 @@ const getCustomerById = async (req, res) => {
 
 const createCustomer = async (req, res) => {
   try {
-    const { name, phone, email, pan, gstin, address, balance } = req.body;
+    const { name, phone, email, pan, aadhar, gstin, address, balance } = req.body;
     
     if (!name || !phone) {
       return res.status(400).json({ message: 'Name and Phone are required' });
@@ -48,6 +48,7 @@ const createCustomer = async (req, res) => {
       phone,
       email: email || '',
       pan: pan || '',
+      aadhar: aadhar || '',
       gstin: gstin || '',
       address: address || '',
       balance: balance || 0

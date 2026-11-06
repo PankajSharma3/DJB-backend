@@ -177,6 +177,7 @@ const createInvoice = async (req, res) => {
       
       preparedItems.push({
         product: item.product,
+        name: productDoc.name,
         vehicle: vehicleId,
         price,
         quantity: qty,
@@ -195,8 +196,9 @@ const createInvoice = async (req, res) => {
     const headerDiscount = Number(discountAmount || 0);
     taxableAmount = Math.max(0, taxableAmount - headerDiscount);
     
-    const finalTotal = Math.round(totalAmount);
-    const roundOff = Number((finalTotal - totalAmount).toFixed(2));
+    const netTotal = Math.max(0, totalAmount - headerDiscount);
+    const finalTotal = Math.round(netTotal);
+    const roundOff = Number((finalTotal - netTotal).toFixed(2));
     
     const invoiceNo = await generateNextInvoiceNumber();
     const invoiceSeq = invoiceNo.split('/').pop() || '0001';
@@ -408,7 +410,7 @@ const updateInvoice = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
-    const { customer, placeOfSupply, items, discountAmount, status, paymentStatus } = req.body;
+    const { customer, placeOfSupply, items, discountAmount, status, paymentStatus, taxCalculationMode: reqTaxMode } = req.body;
     
     const invoice = await Invoice.findById(req.params.id).session(session);
     if (!invoice) {
@@ -416,6 +418,9 @@ const updateInvoice = async (req, res) => {
       session.endSession();
       return res.status(404).json({ message: 'Invoice not found' });
     }
+
+    const taxCalculationMode = reqTaxMode || invoice.taxCalculationMode || 'EXCLUSIVE';
+    invoice.taxCalculationMode = taxCalculationMode;
 
     const oldData = invoice.toObject();
 
@@ -528,24 +533,35 @@ const updateInvoice = async (req, res) => {
         const price = Number(item.price || (productDoc ? productDoc.sellingPrice : 0));
         const discount = Number(item.discount || 0);
         
-        const itemTaxable = (qty * price) - discount;
-        const itemGst = itemTaxable * (gstRate / 100);
-        const itemTotal = itemTaxable + itemGst;
+        let itemTaxable = 0;
+        let itemGst = 0;
+        let itemTotal = 0;
+
+        if (taxCalculationMode === 'INCLUSIVE') {
+          const grossAmount = (qty * price) - discount;
+          itemTaxable = Number((grossAmount / (1 + (gstRate / 100))).toFixed(2));
+          itemGst = Number((grossAmount - itemTaxable).toFixed(2));
+          itemTotal = grossAmount;
+        } else {
+          itemTaxable = Number(((qty * price) - discount).toFixed(2));
+          itemGst = Number((itemTaxable * (gstRate / 100)).toFixed(2));
+          itemTotal = Number((itemTaxable + itemGst).toFixed(2));
+        }
         
         taxableAmount += itemTaxable;
         
         const cgstRate = isInterState ? 0 : gstRate / 2;
-        const cgstVal = isInterState ? 0 : itemGst / 2;
+        const cgstVal = isInterState ? 0 : Number((itemGst / 2).toFixed(2));
         const sgstRate = isInterState ? 0 : gstRate / 2;
-        const sgstVal = isInterState ? 0 : itemGst / 2;
+        const sgstVal = isInterState ? 0 : Number((itemGst / 2).toFixed(2));
         const igstRate = isInterState ? gstRate : 0;
         const igstVal = isInterState ? itemGst : 0;
         
         if (isInterState) {
-          igstAmount += itemGst;
+          igstAmount += igstVal;
         } else {
-          cgstAmount += itemGst / 2;
-          sgstAmount += itemGst / 2;
+          cgstAmount += cgstVal;
+          sgstAmount += sgstVal;
         }
         
         totalAmount += itemTotal;
@@ -571,8 +587,9 @@ const updateInvoice = async (req, res) => {
       const headerDiscount = Number(discountAmount !== undefined ? discountAmount : invoice.discountAmount);
       taxableAmount = Math.max(0, taxableAmount - headerDiscount);
       
-      const finalTotal = Math.round(totalAmount);
-      const roundOff = Number((finalTotal - totalAmount).toFixed(2));
+      const netTotal = Math.max(0, totalAmount - headerDiscount);
+      const finalTotal = Math.round(netTotal);
+      const roundOff = Number((finalTotal - netTotal).toFixed(2));
       
       invoice.items = preparedItems;
       invoice.discountAmount = headerDiscount;

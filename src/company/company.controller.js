@@ -20,17 +20,23 @@ const updateSettings = async (req, res) => {
   try {
     let settings = await Company.findOne();
     const oldData = settings ? settings.toObject() : null;
+
+    const updateData = { ...req.body };
+    delete updateData._id;
+    delete updateData.createdAt;
+    delete updateData.updatedAt;
+    delete updateData.__v;
     
     if (!settings) {
-      settings = new Company(req.body);
+      settings = new Company(updateData);
     } else {
-      Object.assign(settings, req.body);
+      Object.assign(settings, updateData);
     }
     
     await settings.save();
     
     await logAudit({
-      user: req.user.email,
+      user: req.user?.email || 'Admin',
       action: 'UPDATE',
       entity: 'Company',
       entityId: settings._id.toString(),

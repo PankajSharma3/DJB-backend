@@ -27,6 +27,16 @@ const quotationSchema = new mongoose.Schema({
     trim: true,
     default: ''
   },
+  customerAadhar: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  taxCalculationMode: {
+    type: String,
+    enum: ['EXCLUSIVE', 'INCLUSIVE'],
+    default: 'EXCLUSIVE'
+  },
   date: {
     type: Date,
     default: Date.now

@@ -27,7 +27,7 @@ const getQuotationById = async (req, res) => {
 
 const createQuotation = async (req, res) => {
   try {
-    const { customerName, customerPhone, customerAddress, customerGstin, items, discountAmount, placeOfSupply } = req.body;
+    const { customerName, customerPhone, customerAddress, customerGstin, customerAadhar, items, discountAmount, placeOfSupply, taxCalculationMode = 'EXCLUSIVE' } = req.body;
     
     if (!customerName || !customerPhone || !items || items.length === 0) {
       return res.status(400).json({ message: 'Customer name, phone, and items are required' });
@@ -55,24 +55,35 @@ const createQuotation = async (req, res) => {
       const discount = Number(item.discount || 0);
       const gstRate = Number(productDoc.gstRate || 18);
       
-      const itemTaxable = (qty * price) - discount;
-      const itemGst = itemTaxable * (gstRate / 100);
-      const itemTotal = itemTaxable + itemGst;
+      let itemTaxable = 0;
+      let itemGst = 0;
+      let itemTotal = 0;
+
+      if (taxCalculationMode === 'INCLUSIVE') {
+        const grossAmount = (qty * price) - discount;
+        itemTaxable = Number((grossAmount / (1 + (gstRate / 100))).toFixed(2));
+        itemGst = Number((grossAmount - itemTaxable).toFixed(2));
+        itemTotal = grossAmount;
+      } else {
+        itemTaxable = Number(((qty * price) - discount).toFixed(2));
+        itemGst = Number((itemTaxable * (gstRate / 100)).toFixed(2));
+        itemTotal = Number((itemTaxable + itemGst).toFixed(2));
+      }
       
       taxableAmount += itemTaxable;
       
       const cgstRate = isInterState ? 0 : gstRate / 2;
-      const cgstVal = isInterState ? 0 : itemGst / 2;
+      const cgstVal = isInterState ? 0 : Number((itemGst / 2).toFixed(2));
       const sgstRate = isInterState ? 0 : gstRate / 2;
-      const sgstVal = isInterState ? 0 : itemGst / 2;
+      const sgstVal = isInterState ? 0 : Number((itemGst / 2).toFixed(2));
       const igstRate = isInterState ? gstRate : 0;
       const igstVal = isInterState ? itemGst : 0;
       
       if (isInterState) {
-        igstAmount += itemGst;
+        igstAmount += igstVal;
       } else {
-        cgstAmount += itemGst / 2;
-        sgstAmount += itemGst / 2;
+        cgstAmount += cgstVal;
+        sgstAmount += sgstVal;
       }
       
       totalAmount += itemTotal;
@@ -96,12 +107,10 @@ const createQuotation = async (req, res) => {
     // Apply discountAmount if provided at header level
     const headerDiscount = Number(discountAmount || 0);
     taxableAmount = Math.max(0, taxableAmount - headerDiscount);
-    // Re-adjust GST based on header discount if applicable (simpler to calculate on final total)
-    // For simplicity, we keep items calculations, but can adjust totals
     
-    // Rounding off to nearest integer
-    const finalTotal = Math.round(totalAmount);
-    const roundOff = Number((finalTotal - totalAmount).toFixed(2));
+    const netTotal = Math.max(0, totalAmount - headerDiscount);
+    const finalTotal = Math.round(netTotal);
+    const roundOff = Number((finalTotal - netTotal).toFixed(2));
     
     const quotation = new Quotation({
       quotationNo,
@@ -109,6 +118,8 @@ const createQuotation = async (req, res) => {
       customerPhone,
       customerAddress: customerAddress || '',
       customerGstin: customerGstin || '',
+      customerAadhar: customerAadhar || '',
+      taxCalculationMode,
       date: new Date(),
       items: preparedItems,
       discountAmount: headerDiscount,
