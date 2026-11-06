@@ -14,6 +14,17 @@ const getInvoices = async (req, res) => {
       .populate('items.product')
       .populate('items.vehicle')
       .sort({ invoiceDate: -1 });
+
+    // Ensure each invoice's taxableAmount correctly reflects sum of items
+    invoices.forEach(inv => {
+      if (inv.items && inv.items.length > 0) {
+        const itemsTaxableTotal = inv.items.reduce((sum, item) => sum + (Number(item.taxable) || 0), 0);
+        if (itemsTaxableTotal > 0 && Math.abs(inv.taxableAmount - itemsTaxableTotal) > 0.05) {
+          inv.taxableAmount = Number(itemsTaxableTotal.toFixed(2));
+        }
+      }
+    });
+
     res.json(invoices);
   } catch (error) {
     console.error('getInvoices error:', error);
@@ -30,6 +41,15 @@ const getInvoiceById = async (req, res) => {
     if (!invoice) {
       return res.status(404).json({ message: 'Invoice not found' });
     }
+
+    // Ensure invoice.taxableAmount accurately matches true sum of item taxable values
+    if (invoice.items && invoice.items.length > 0) {
+      const itemsTaxableTotal = invoice.items.reduce((sum, item) => sum + (Number(item.taxable) || 0), 0);
+      if (itemsTaxableTotal > 0 && Math.abs(invoice.taxableAmount - itemsTaxableTotal) > 0.05) {
+        invoice.taxableAmount = Number(itemsTaxableTotal.toFixed(2));
+      }
+    }
+
     res.json(invoice);
   } catch (error) {
     console.error('getInvoiceById error:', error);
@@ -162,7 +182,7 @@ const createInvoice = async (req, res) => {
       const cgstRate = isInterState ? 0 : gstRate / 2;
       const cgstVal = isInterState ? 0 : Number((itemGst / 2).toFixed(2));
       const sgstRate = isInterState ? 0 : gstRate / 2;
-      const sgstVal = isInterState ? 0 : Number((itemGst / 2).toFixed(2));
+      const sgstVal = isInterState ? 0 : Number((itemGst - cgstVal).toFixed(2));
       const igstRate = isInterState ? gstRate : 0;
       const igstVal = isInterState ? itemGst : 0;
       
@@ -198,11 +218,7 @@ const createInvoice = async (req, res) => {
     const finalTotal = Math.round(discountedTotal);
     const roundOff = Number((finalTotal - discountedTotal).toFixed(2));
     
-    if (taxCalculationMode === 'INCLUSIVE' && grossItemsTotal > 0) {
-      taxableAmount = Math.max(0, taxableAmount - (headerDiscount * (taxableAmount / grossItemsTotal)));
-    } else {
-      taxableAmount = Math.max(0, taxableAmount - headerDiscount);
-    }
+    // Taxable amount is the base taxable value of the items supplied
     taxableAmount = Number(taxableAmount.toFixed(2));
     
     const invoiceNo = await generateNextInvoiceNumber();
@@ -561,7 +577,7 @@ const updateInvoice = async (req, res) => {
         const cgstRate = isInterState ? 0 : gstRate / 2;
         const cgstVal = isInterState ? 0 : Number((itemGst / 2).toFixed(2));
         const sgstRate = isInterState ? 0 : gstRate / 2;
-        const sgstVal = isInterState ? 0 : Number((itemGst / 2).toFixed(2));
+        const sgstVal = isInterState ? 0 : Number((itemGst - cgstVal).toFixed(2));
         const igstRate = isInterState ? gstRate : 0;
         const igstVal = isInterState ? itemGst : 0;
         
@@ -597,13 +613,6 @@ const updateInvoice = async (req, res) => {
       const discountedTotal = Math.max(0, grossItemsTotal - headerDiscount);
       const finalTotal = Math.round(discountedTotal);
       const roundOff = Number((finalTotal - discountedTotal).toFixed(2));
-      
-      const taxMode = invoice.taxCalculationMode || 'EXCLUSIVE';
-      if (taxMode === 'INCLUSIVE' && grossItemsTotal > 0) {
-        taxableAmount = Math.max(0, taxableAmount - (headerDiscount * (taxableAmount / grossItemsTotal)));
-      } else {
-        taxableAmount = Math.max(0, taxableAmount - headerDiscount);
-      }
       
       invoice.items = preparedItems;
       invoice.discountAmount = headerDiscount;
@@ -642,7 +651,11 @@ const updateInvoice = async (req, res) => {
         
         invoice.roundOff = Number((newFinalTotal - newDiscountedTotal).toFixed(2));
         invoice.totalAmount = newFinalTotal;
-        invoice.taxableAmount = Math.max(0, Number((invoice.taxableAmount - diffDiscount).toFixed(2)));
+        // Keep invoice.taxableAmount accurately reflecting the items' taxable value
+        const itemsTaxableSum = (invoice.items || []).reduce((acc, it) => acc + (Number(it.taxable) || 0), 0);
+        if (itemsTaxableSum > 0) {
+          invoice.taxableAmount = Number(itemsTaxableSum.toFixed(2));
+        }
         
         const paymentsMade = Math.max(0, oldData.totalAmount - oldData.outstandingAmount);
         invoice.outstandingAmount = Math.max(0, newFinalTotal - paymentsMade);
