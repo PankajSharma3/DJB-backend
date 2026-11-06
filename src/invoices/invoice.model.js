@@ -73,7 +73,7 @@ const invoiceSchema = new mongoose.Schema({
   taxCalculationMode: {
     type: String,
     enum: ['EXCLUSIVE', 'INCLUSIVE'],
-    default: 'INCLUSIVE'
+    default: 'EXCLUSIVE'
   },
   discountAmount: {
     type: Number,

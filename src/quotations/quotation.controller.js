@@ -5,14 +5,6 @@ const { logAudit } = require('../utils/audit');
 const getQuotations = async (req, res) => {
   try {
     const quotations = await Quotation.find().populate('items.product').sort({ createdAt: -1 });
-    quotations.forEach(q => {
-      if (q.items && q.items.length > 0) {
-        const itemsTaxable = q.items.reduce((s, it) => s + (Number(it.taxable) || 0), 0);
-        if (itemsTaxable > 0 && Math.abs(q.taxableAmount - itemsTaxable) > 0.05) {
-          q.taxableAmount = Number(itemsTaxable.toFixed(2));
-        }
-      }
-    });
     res.json(quotations);
   } catch (error) {
     console.error('getQuotations error:', error);
@@ -25,12 +17,6 @@ const getQuotationById = async (req, res) => {
     const quotation = await Quotation.findById(req.params.id).populate('items.product');
     if (!quotation) {
       return res.status(404).json({ message: 'Quotation not found' });
-    }
-    if (quotation.items && quotation.items.length > 0) {
-      const itemsTaxable = quotation.items.reduce((s, it) => s + (Number(it.taxable) || 0), 0);
-      if (itemsTaxable > 0 && Math.abs(quotation.taxableAmount - itemsTaxable) > 0.05) {
-        quotation.taxableAmount = Number(itemsTaxable.toFixed(2));
-      }
     }
     res.json(quotation);
   } catch (error) {
@@ -76,17 +62,17 @@ const createQuotation = async (req, res) => {
       taxableAmount += itemTaxable;
       
       const cgstRate = isInterState ? 0 : gstRate / 2;
-      const cgstVal = isInterState ? 0 : Number((itemGst / 2).toFixed(2));
+      const cgstVal = isInterState ? 0 : itemGst / 2;
       const sgstRate = isInterState ? 0 : gstRate / 2;
-      const sgstVal = isInterState ? 0 : Number((itemGst - cgstVal).toFixed(2));
+      const sgstVal = isInterState ? 0 : itemGst / 2;
       const igstRate = isInterState ? gstRate : 0;
-      const igstVal = isInterState ? Number(itemGst.toFixed(2)) : 0;
+      const igstVal = isInterState ? itemGst : 0;
       
       if (isInterState) {
-        igstAmount += igstVal;
+        igstAmount += itemGst;
       } else {
-        cgstAmount += cgstVal;
-        sgstAmount += sgstVal;
+        cgstAmount += itemGst / 2;
+        sgstAmount += itemGst / 2;
       }
       
       totalAmount += itemTotal;
@@ -108,14 +94,14 @@ const createQuotation = async (req, res) => {
     }
     
     // Apply discountAmount if provided at header level
-    const headerDiscount = Math.max(0, Number(discountAmount || 0));
-    const grossTotal = totalAmount;
-    const discountedTotal = Math.max(0, grossTotal - headerDiscount);
-    taxableAmount = Number(taxableAmount.toFixed(2));
+    const headerDiscount = Number(discountAmount || 0);
+    taxableAmount = Math.max(0, taxableAmount - headerDiscount);
+    // Re-adjust GST based on header discount if applicable (simpler to calculate on final total)
+    // For simplicity, we keep items calculations, but can adjust totals
     
     // Rounding off to nearest integer
-    const finalTotal = Math.round(discountedTotal);
-    const roundOff = Number((finalTotal - discountedTotal).toFixed(2));
+    const finalTotal = Math.round(totalAmount);
+    const roundOff = Number((finalTotal - totalAmount).toFixed(2));
     
     const quotation = new Quotation({
       quotationNo,

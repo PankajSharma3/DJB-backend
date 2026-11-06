@@ -62,11 +62,7 @@ const companySchema = new mongoose.Schema({
   taxCalculationMode: {
     type: String,
     enum: ['EXCLUSIVE', 'INCLUSIVE'],
-    default: 'INCLUSIVE'
-  },
-  taxModeManuallyConfigured: {
-    type: Boolean,
-    default: false
+    default: 'EXCLUSIVE'
   },
   phone: {
     type: String,
